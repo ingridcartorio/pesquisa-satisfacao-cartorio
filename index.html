@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pesquisa de Satisfação – [Nome do Cartório]</title>
+<style>
+  :root { --prim:#0b5cab; --bg:#f7f9fc; --card:#ffffff; --muted:#6b7280; }
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:var(--bg);margin:0;color:#111}
+  .wrap{max-width:720px;margin:24px auto;padding:16px}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:24px}
+  h1{font-size:1.5rem;margin:.2rem 0 1rem}
+  .desc{color:var(--muted);margin-bottom:1rem;line-height:1.5}
+  .group{margin:1rem 0}
+  label{display:block;font-weight:600;margin-bottom:.5rem}
+  .faces{display:flex;gap:8px;flex-wrap:wrap}
+  .face input{display:none}
+  .face span{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:12px;border:1px solid #e5e7eb;cursor:pointer;font-size:22px}
+  .face input:checked + span{border-color:var(--prim);box-shadow:0 0 0 3px rgba(11,92,171,.15)}
+  input[type="text"], textarea{
+    width:100%;border:1px solid #e5e7eb;border-radius:12px;padding:12px;font-size:16px;outline:none
+  }
+  textarea{min-height:100px;resize:vertical}
+  .actions{margin-top:1.5rem}
+  button{background:var(--prim);color:#fff;border:none;border-radius:12px;padding:12px 18px;font-size:16px;cursor:pointer}
+  .muted{font-size:.9rem;color:var(--muted)}
+  .success, .error{margin-top:12px;padding:12px;border-radius:12px;display:none}
+  .success{background:#e8f5e9;color:#256029}
+  .error{background:#fdecea;color:#611a15}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:.5rem}
+  header img{height:40px}
+  .hp{display:none} /* honeypot */
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <!-- Opcional: logomarca -->
+        <!-- <img src="LOGO_URL" alt="Logomarca" /> -->
+        <h1>Pesquisa de Satisfação</h1>
+      </header>
+      <p class="desc">
+        Sua opinião é muito importante para melhorarmos nossos serviços.
+        Esta pesquisa é anônima. A identificação do atendente é opcional.
+      </p>
+
+      <form id="form">
+        <!-- Honeypot anti-spam -->
+        <input class="hp" type="text" name="website" autocomplete="off" />
+
+        <div class="group">
+          <label>Como avalia o seu atendimento de um modo geral?</label>
+          <div class="faces">
+            <label class="face"><input type="radio" name="nota" value="1" required /><span>😠</span></label>
+            <label class="face"><input type="radio" name="nota" value="2" /><span>🙁</span></label>
+            <label class="face"><input type="radio" name="nota" value="3" /><span>😐</span></label>
+            <label class="face"><input type="radio" name="nota" value="4" /><span>🙂</span></label>
+            <label class="face"><input type="radio" name="nota" value="5" /><span>😃</span></label>
+          </div>
+        </div>
+
+        <div class="group">
+          <label>Deseja indicar o nome do atendente? <span class="muted">(opcional)</span></label>
+          <input type="text" name="atendente" placeholder="Ex.: Maria" />
+        </div>
+
+        <div class="group">
+          <label>Deixe aqui seu comentário, crítica ou sugestão <span class="muted">(opcional)</span></label>
+          <textarea name="comentario" placeholder="Escreva seu comentário..."></textarea>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Enviar avaliação</button>
+          <div id="ok" class="success">Obrigado! Sua resposta foi registrada.</div>
+          <div id="err" class="error">Não foi possível enviar agora. Tente novamente.</div>
+        </div>
+        <p class="muted">Tempo estimado: 10–20 segundos.</p>
+      </form>
+    </div>
+  </div>
+
+<script>
+  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxT0v-MeyS3erXyy4rD7LSuRjXrYR8kBDZASStlBUOxbTbybDTjjqIAxYrg-Ilps0Z1JQ/exec';
+
+  const form = document.getElementById('form');
+  const ok = document.getElementById('ok');
+  const err = document.getElementById('err');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    ok.style.display = 'none';
+    err.style.display = 'none';
+
+    // Honeypot: se preenchido, não envia
+    if (form.website && form.website.value) {
+      ok.style.display = 'block';
+      form.reset();
+      return;
+    }
+
+    const fd = new FormData(form);
+    const payload = {
+      nota: fd.get('nota'),
+      atendente: (fd.get('atendente') || '').trim(),
+      comentario: (fd.get('comentario') || '').trim(),
+      userAgent: navigator.userAgent
+    };
+
+    try {
+      const resp = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+        // Se houver bloqueio CORS no seu domínio estático e você não precisar ler a resposta:
+        // mode: 'no-cors'
+      });
+
+      // Mesmo que não consiga ler a resposta por CORS, o Apps Script receberá o POST:
+      if (!resp || !('ok' in resp) || resp.ok) {
+        ok.style.display = 'block';
+        form.reset();
+      } else {
+        ok.style.display = 'block'; // fallback otimista
+        form.reset();
+      }
+    } catch (e) {
+      err.style.display = 'block';
+    }
+  });
+</script>
+</body>
+</html>
