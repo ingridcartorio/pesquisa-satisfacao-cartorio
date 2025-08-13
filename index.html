@@ -23,7 +23,7 @@
   textarea{min-height:100px;resize:vertical}
   .actions{margin-top:1.5rem}
   button{background:var(--prim);color:#fff;border:none;border-radius:12px;padding:12px 18px;font-size:16px;cursor:pointer}
-  .muted{font-size:.9rem;color:var(--muted)}
+  .muted{font-size:.9rem;color:#6b7280}
   .success, .error{margin-top:12px;padding:12px;border-radius:12px;display:none}
   .success{background:#e8f5e9;color:#256029}
   .error{background:#fdecea;color:#611a15}
@@ -108,22 +108,16 @@
     };
 
     try {
-      const resp = await fetch(WEB_APP_URL, {
+      // Evitar preflight/CORS: sem headers customizados e com no-cors
+      await fetch(WEB_APP_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        mode: 'no-cors',
         body: JSON.stringify(payload)
-        // Se houver bloqueio CORS no seu domínio estático e você não precisar ler a resposta:
-        // mode: 'no-cors'
       });
 
-      // Mesmo que não consiga ler a resposta por CORS, o Apps Script receberá o POST:
-      if (!resp || !('ok' in resp) || resp.ok) {
-        ok.style.display = 'block';
-        form.reset();
-      } else {
-        ok.style.display = 'block'; // fallback otimista
-        form.reset();
-      }
+      // Não conseguimos ler a resposta em 'no-cors', mas o envio ocorre.
+      ok.style.display = 'block';
+      form.reset();
     } catch (e) {
       err.style.display = 'block';
     }
