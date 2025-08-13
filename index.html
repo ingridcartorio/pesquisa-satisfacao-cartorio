@@ -29,14 +29,13 @@
   .error{background:#fdecea;color:#611a15}
   header{display:flex;align-items:center;gap:12px;margin-bottom:.5rem}
   header img{height:40px}
-  .hp{display:none} /* honeypot */
+  .hp{display:none}
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <header>
-        <!-- Opcional: logomarca -->
         <!-- <img src="LOGO_URL" alt="Logomarca" /> -->
         <h1>Pesquisa de Satisfação</h1>
       </header>
@@ -45,8 +44,8 @@
         Esta pesquisa é anônima. A identificação do atendente é opcional.
       </p>
 
-      <form id="form">
-        <!-- Honeypot anti-spam -->
+      <!-- FORM com envio direto ao Apps Script -->
+      <form id="form" action="https://script.google.com/macros/s/AKfycbxT0v-MeyS3erXyy4rD7LSuRjXrYR8kBDZASStlBUOxbTbybDTjjqIAxYrg-Ilps0Z1JQ/exec" method="POST" target="hidden_iframe">
         <input class="hp" type="text" name="website" autocomplete="off" />
 
         <div class="group">
@@ -70,6 +69,9 @@
           <textarea name="comentario" placeholder="Escreva seu comentário..."></textarea>
         </div>
 
+        <!-- userAgent oculto -->
+        <input type="hidden" name="userAgent" id="ua" />
+
         <div class="actions">
           <button type="submit">Enviar avaliação</button>
           <div id="ok" class="success">Obrigado! Sua resposta foi registrada.</div>
@@ -77,48 +79,27 @@
         </div>
         <p class="muted">Tempo estimado: 10–20 segundos.</p>
       </form>
+
+      <!-- iframe oculto para receber a resposta -->
+      <iframe name="hidden_iframe" style="display:none;"></iframe>
     </div>
   </div>
 
 <script>
-  const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxT0v-MeyS3erXyy4rD7LSuRjXrYR8kBDZASStlBUOxbTbybDTjjqIAxYrg-Ilps0Z1JQ/exec';
-
   const form = document.getElementById('form');
   const ok = document.getElementById('ok');
   const err = document.getElementById('err');
+  const ua = document.getElementById('ua');
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    ok.style.display = 'none';
-    err.style.display = 'none';
-
-    // Honeypot: se preenchido, não envia
-    if (form.website && form.website.value) {
-      ok.style.display = 'block';
-      form.reset();
-      return;
-    }
-
-    const fd = new FormData(form);
-    const payload = {
-      nota: fd.get('nota'),
-      atendente: (fd.get('atendente') || '').trim(),
-      comentario: (fd.get('comentario') || '').trim(),
-      userAgent: navigator.userAgent
-    };
-
+  form.addEventListener('submit', () => {
     try {
-      // Evitar preflight/CORS: sem headers customizados e com no-cors
-      await fetch(WEB_APP_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        body: JSON.stringify(payload)
-      });
-
-      // Não conseguimos ler a resposta em 'no-cors', mas o envio ocorre.
-      ok.style.display = 'block';
-      form.reset();
-    } catch (e) {
+      if (ua) ua.value = navigator.userAgent;
+      setTimeout(() => {
+        ok.style.display = 'block';
+        err.style.display = 'none';
+        form.reset();
+      }, 600);
+    } catch (_) {
       err.style.display = 'block';
     }
   });
